@@ -21,8 +21,9 @@ while true; do
     sleep $((2 + RANDOM % 5))
 done
 EOF
-```
+
 chmod +x ~/log_generator.sh
+```
 ~/log_generator.sh &
 
 
@@ -31,12 +32,16 @@ chmod +x ~/log_generator.sh
 
 
 # Install and configure rsyslog for remote reception
+```bash
 sudo apt update
 sudo apt install rsyslog
+```
 
 # Use the dedicated logging user for operations
+```bash
 sudo chown -R loguser:loggroup /var/log/clients
 sudo chmod -R 750 /var/log/clients
+```
 
 # Create a new configuration file
 sudo nano /etc/rsyslog.d/client-sorting.conf
