@@ -5,6 +5,7 @@ ls -la
 # What processes are writing logs right now?
 sudo lsof | grep /var/log
 
+```bash
 # Create a simple script that generates interesting logs
 cat << 'EOF' > ~/log_generator.sh
 #!/bin/bash
@@ -19,6 +20,9 @@ while true; do
     sleep $((2 + RANDOM % 5))
 done
 EOF
+
+chmod +x ~/log_generator.sh
+```
 
 chmod +x ~/log_generator.sh
 
