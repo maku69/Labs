@@ -1,0 +1,4 @@
+uhh ubuntu 24.04.1 server
+2gb ram
+1 cpu core
+ts
