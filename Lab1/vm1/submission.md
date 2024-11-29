@@ -5,8 +5,9 @@ ls -la
 # What processes are writing logs right now?
 sudo lsof | grep /var/log
 
-```bash
+
 # Create a simple script that generates interesting logs
+```bash
 cat << 'EOF' > ~/log_generator.sh
 #!/bin/bash
 while true; do
@@ -20,13 +21,14 @@ while true; do
     sleep $((2 + RANDOM % 5))
 done
 EOF
-
-chmod +x ~/log_generator.sh
 ```
-
 chmod +x ~/log_generator.sh
-
 ~/log_generator.sh &
+
+
+
+
+
 
 # Install and configure rsyslog for remote reception
 sudo apt update
