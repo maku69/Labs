@@ -7,11 +7,15 @@ sudo apt update
 sudo apt upgrade -y
 ```
 
-### 2. VM1 Setup (Zabbix Server)
+### 2. VM1 Setup 
 ```bash
+# Update system first
+sudo apt update
+sudo apt upgrade -y
+
 # Install Zabbix repository
-wget https://repo.zabbix.com/zabbix/6.0/ubuntu/pool/main/z/zabbix-release/zabbix-release_6.0-4%2Bubuntu22.04_all.deb
-sudo dpkg -i zabbix-release_6.0-4+ubuntu22.04_all.deb
+wget https://repo.zabbix.com/zabbix/6.0/ubuntu/pool/main/z/zabbix-release/zabbix-release_latest_6.0+ubuntu24.04_all.deb
+sudo dpkg -i zabbix-release_latest_6.0+ubuntu24.04_all.deb
 sudo apt update
 
 # Install ALL server components
@@ -37,8 +41,13 @@ sudo systemctl restart zabbix-server zabbix-agent apache2
 sudo systemctl enable zabbix-server zabbix-agent apache2
 ```
 
-### 3. VM2 Setup (Test Website)
+### 3. VM2 Setup
 ```bash
+# Install Zabbix repository
+wget https://repo.zabbix.com/zabbix/6.0/ubuntu/pool/main/z/zabbix-release/zabbix-release_latest_6.0+ubuntu24.04_all.deb
+sudo dpkg -i zabbix-release_latest_6.0+ubuntu24.04_all.deb
+sudo apt update
+
 # Install only Zabbix agent
 sudo apt install -y zabbix-agent
 
@@ -47,7 +56,7 @@ sudo nano /etc/zabbix/zabbix_agentd.conf
 # Change these lines:
 Server=<VM1-IP-ADDRESS>       # IP of your Zabbix server
 ServerActive=<VM1-IP-ADDRESS> # Same IP
-Hostname=TestWeb-YourName     # Remember this name!
+Hostname=TestWeb-Markus    # Remember this name!
 
 # Start agent
 sudo systemctl restart zabbix-agent
