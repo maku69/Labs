@@ -14,6 +14,8 @@ sudo chmod +x /usr/local/bin/docker-compose
 docker --version
 docker-compose --version
 echo "Please log out and log back in to apply the Docker group changes, or run: newgrp docker"
+```
+```bash
 chmod +x install_docker.sh
 ./install_docker.sh
 mkdir log-processing-stack
