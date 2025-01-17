@@ -48,3 +48,158 @@
    49  sudo docker pull docker.elastic.co/kibana/kibana:8.17.0
    50  docker run -d --name kib01 --net elastic -p 5601:5601   -e "ELASTICSEARCH_HOSTS=http://es01:9200"   docker.elastic.co/kibana/kibana:8.17.0
    51  sudo docker run -d --name kib01 --net elastic -p 5601:5601   -e "ELASTICSEARCH_HOSTS=http://es01:9200"   docker.elastic.co/kibana/kibana:8.17.0
+
+```
+# Adding Logstash and Filebeat to Docker-based Elastic Stack
+
+This guide assumes you already have Elasticsearch and Kibana running in Docker containers on the `elastic` network, with security disabled for testing purposes.
+
+## Prerequisites
+- Docker and Docker Compose installed
+- Elasticsearch container running (named `es01`)
+- Kibana container running (named `kib01`)
+- Docker network `elastic` created
+
+## 1. Setting Up Logstash
+
+### 1.1. Create Configuration Directory
+```bash
+# Create directory for Logstash configs
+mkdir -p ~/elk/logstash/config
+cd ~/elk/logstash/config
+```
+
+### 1.2. Create Logstash Configuration Files
+
+#### Create pipeline configuration file
+```bash
+# Create logstash.yml
+cat << EOF > logstash.yml
+http.host: "0.0.0.0"
+xpack.monitoring.enabled: true
+xpack.monitoring.elasticsearch.hosts: ["http://es01:9200"]
+EOF
+```
+
+#### Create input configuration
+```bash
+# Create 02-beats-input.conf
+cat << EOF > 02-beats-input.conf
+input {
+  beats {
+    port => 5044
+    host => "0.0.0.0"
+  }
+}
+EOF
+```
+
+#### Create filter configuration
+```bash
+# Create 10-syslog-filter.conf
+cat << EOF > 10-syslog-filter.conf
+filter {
+  if [container][name] {
+    mutate {
+      add_field => {
+        "container_name" => "%{[container][name]}"
+      }
+    }
+  }
+  
+  if [message] {
+    grok {
+      match => { "message" => "%{GREEDYDATA:log_message}" }
+    }
+  }
+}
+EOF
+```
+
+#### Create output configuration
+```bash
+# Create 30-elasticsearch-output.conf
+cat << EOF > 30-elasticsearch-output.conf
+output {
+  elasticsearch {
+    hosts => ["http://es01:9200"]
+    index => "%{[@metadata][beat]}-%{[@metadata][version]}-%{+YYYY.MM.dd}"
+  }
+}
+EOF
+```
+
+### 1.3. Start Logstash Container
+```bash
+docker run -d \
+  --name logstash01 \
+  --net elastic \
+  -v ~/elk/logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml \
+  -v ~/elk/logstash/config:/usr/share/logstash/pipeline/ \
+  -p 5044:5044 \
+  docker.elastic.co/logstash/logstash:8.17.0
+```
+
+### 1.4. Verify Logstash is Running
+```bash
+# Check container status
+docker ps | grep logstash01
+
+# Check logs for any errors
+docker logs logstash01
+```
+
+## 2. Setting Up Filebeat
+
+### 2.1. Create Configuration Directory
+```bash
+# Create directory for Filebeat configs
+mkdir -p ~/elk/filebeat/config
+cd ~/elk/filebeat/config
+```
+
+### 2.2. Create Filebeat Configuration
+```bash
+# Create filebeat.yml
+cat << EOF > filebeat.yml
+filebeat.inputs:
+- type: container
+  paths: 
+    - '/var/lib/docker/containers/*/*.log'
+
+processors:
+  - add_docker_metadata:
+      host: "unix:///var/run/docker.sock"
+
+filebeat.config.modules:
+  path: \${path.config}/modules.d/*.yml
+  reload.enabled: false
+  
+output.logstash:
+  hosts: ["logstash01:5044"]
+  
+logging.json: true
+logging.metrics.enabled: false
+EOF
+```
+
+### 2.3. Start Filebeat Container
+```bash
+docker run -d \
+  --name filebeat01 \
+  --net elastic \
+  --user root \
+  --volume="/var/lib/docker/containers:/var/lib/docker/containers:ro" \
+  --volume="/var/run/docker.sock:/var/run/docker.sock:ro" \
+  --volume="~/elk/filebeat/config/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro" \
+  docker.elastic.co/beats/filebeat:8.17.0
+```
+
+### 2.4. Verify Filebeat is Running
+```bash
+# Check container status
+docker ps | grep filebeat01
+
+# Check logs for any errors
+docker logs filebeat01
+```
